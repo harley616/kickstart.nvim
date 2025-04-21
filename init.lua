@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -118,9 +118,42 @@ vim.schedule(function()
   vim.opt.clipboard = 'unnamedplus'
 end)
 
+-- local function set_transparent_bg()
+--   -- Normal text
+--   vim.api.nvim_set_hl(0, 'Normal', { bg = 'NONE' })
+--   -- Non-current windows (splits)
+--   vim.api.nvim_set_hl(0, 'NormalNC', { bg = 'NONE' })
+--   -- End of buffer (~ signs)
+--   vim.api.nvim_set_hl(0, 'EndOfBuffer', { bg = 'NONE' })
+--   -- Sign column (for diagnostics, git signs, etc.)
+--   vim.api.nvim_set_hl(0, 'SignColumn', { bg = 'NONE' })
+--   -- Add other groups if your colorscheme leaves opaque backgrounds, e.g.:
+--   -- vim.api.nvim_set_hl(0, 'MsgArea', { bg = 'NONE' })
+--   -- vim.api.nvim_set_hl(0, 'Folded', { bg = 'NONE' })
+-- end
+
+vim.keymap.set('n', '<leader>pv', vim.cmd.Ex)
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
+vim.keymap.set('n', 'K', 'mzJ`z')
+vim.keymap.set('n', '<C-d>', '<C-d>zz')
+vim.keymap.set('n', '<C-u>', '<C-u>zz')
+vim.keymap.set('n', 'n', 'nzzzv')
+vim.keymap.set('n', 'N', 'Nzzzv')
+
+vim.keymap.set('x', '<leader>p', '"_dP')
+
+vim.keymap.set('n', '<leader>y', '"+y')
+vim.keymap.set('v', '<leader>y', '"+y')
+
+vim.keymap.set('n', 'Q', '<nop>')
+vim.keymap.set('n', '<leader>f', function()
+  vim.lsp.buf.format()
+end)
+
 -- Enable break indent
 vim.opt.breakindent = true
-
+vim.opt.tabstop = 4
 -- Save undo history
 vim.opt.undofile = true
 
@@ -195,6 +228,7 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
 --  See `:help vim.highlight.on_yank()`
+
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
@@ -202,6 +236,11 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
+
+-- vim.api.nvim_create_autocmd('ColorScheme', {
+--   pattern = '*',
+--   callback = set_transparent_bg, -- Re-apply the function after a colorscheme loads
+-- })
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -616,17 +655,22 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
+        html = {},
+        gopls = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {
+          root_markers = { '.git' },
+        },
+        dockerls = {},
         --
 
         lua_ls = {
@@ -789,7 +833,7 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
@@ -843,13 +887,14 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    --'folke/tokyonight.nvim',
+    'loctvl842/monokai-pro.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'monokai-pro'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -933,7 +978,7 @@ require('lazy').setup({
   --
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
