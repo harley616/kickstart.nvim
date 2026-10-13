@@ -24,6 +24,12 @@ vim.keymap.set('n', '<leader>y', '"+y')
 vim.keymap.set('v', '<leader>y', '"+y')
 
 vim.keymap.set('n', 'Q', '<nop>')
+
+-- :W saves without formatting (sets a buffer flag, then triggers normal :w)
+vim.api.nvim_create_user_command('W', function()
+  vim.b.disable_autoformat = true
+  vim.cmd 'write'
+end, { desc = 'Save without formatting' })
 vim.keymap.set('n', '<leader>f', function()
   vim.lsp.buf.format()
 end)
@@ -93,6 +99,17 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+vim.api.nvim_create_autocmd('BufWritePre', {
+  pattern = { '*.js', '*.ts', '*.jsx', '*.tsx' },
+  callback = function()
+    -- Apply ESLint fix-all code action
+    vim.lsp.buf.code_action {
+      context = { only = { 'source.fixAll.eslint' } },
+      apply = true,
+    }
+  end,
+})
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -496,7 +513,6 @@ require('lazy').setup({
               end,
             })
           end
-
           -- The following code creates a keymap to toggle inlay hints in your
           -- code, if the language server you are using supports them
           --
@@ -539,14 +555,57 @@ require('lazy').setup({
         clangd = {},
         -- gopls = {},
         -- pyright = {},
-        rust_analyzer = {},
+        -- rust_analyzer = {},
         html = {},
         gopls = {},
         eslint = { root_markers = {
           '.git',
         } },
-        ts_ls = {
-          root_markers = { '.git' },
+        jsonls = {},
+        -- ts_ls = {
+        --   enabled = false,
+        -- },
+        vtsls = {
+          filetypes = {
+            'javascript',
+            'javascriptreact',
+            'javascript.jsx',
+            'typescript',
+            'typescriptreact',
+            'typescript.tsx',
+          },
+          settings = {
+            complete_function_calls = true,
+            vtsls = {
+              enableMoveToFileCodeAction = true,
+              autoUseWorkspaceTsdk = true,
+              experimental = {
+                maxInlayHintLength = 30,
+                completion = {
+                  enableServerSideFuzzyMatch = true,
+                },
+              },
+            },
+            typescript = {
+              updateImportsOnFileMove = { enabled = 'always' },
+              suggest = {
+                completeFunctionCalls = true,
+              },
+              inlayHints = {
+                enumMemberValues = { enabled = true },
+                functionLikeReturnTypes = { enabled = true },
+                parameterNames = { enabled = 'literals' },
+                parameterTypes = { enabled = true },
+                propertyDeclarationTypes = { enabled = true },
+                variableTypes = { enabled = false },
+              },
+              tsserver = {
+                log = 'verbose',
+                maxTsServerMemory = 16000,
+                nodePath = 'node',
+              },
+            },
+          },
         },
         dockerls = {},
         lua_ls = {
@@ -600,7 +659,11 @@ require('lazy').setup({
       }
     end,
   },
-
+  -- {
+  --   'pmizio/typescript-tools.nvim',
+  --   dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+  --   opts = {},
+  -- },
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
@@ -618,6 +681,12 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
+        -- Skip formatting when saving with :W (noformat)
+        if vim.b[bufnr].disable_autoformat then
+          vim.b[bufnr].disable_autoformat = false
+          return false
+        end
+
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
